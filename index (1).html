@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DoorLoop &middot; Services Revenue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --navy: #162050;
+    --navy-deep: #0B1332;
+    --navy-deeper: #040611;
+    --navy-soft: #1c2862;
+    --navy-card: #1a2358;
+    --navy-card-hover: #1f2a6a;
+    --border: #2a3470;
+    --border-soft: #1f2858;
+    --core-blue: #3185FC;
+    --core-blue-soft: rgba(49, 133, 252, 0.14);
+    --core-blue-100: #BEDCFF;
+    --core-blue-300: #43A3FF;
+    --light-blue: #DBEAFF;
+    --neon: #DFFE02;
+    --neon-soft: rgba(223, 254, 2, 0.14);
+    --pink: #FF4998;
+    --pink-soft: rgba(255, 73, 152, 0.14);
+    --cloud: #F0EFEB;
+    --text: #FFFFFF;
+    --text-muted: #9FB0E0;
+    --text-faint: #6878B0;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--navy-deep);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at top left, rgba(49, 133, 252, 0.10), transparent 55%),
+      radial-gradient(ellipse at bottom right, rgba(223, 254, 2, 0.04), transparent 50%);
+  }
+
+  .layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }
+
+  .sidebar {
+    background: var(--navy);
+    border-right: 1px solid var(--border-soft);
+    padding: 28px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .brand { margin-bottom: 8px; }
+  .brand svg { display: block; }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-faint);
+    margin-bottom: 36px;
+  }
+
+  .nav { display: flex; flex-direction: column; gap: 2px; }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 400;
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .nav-item:hover { background: var(--navy-soft); color: var(--text); }
+  .nav-item.active { background: var(--navy-soft); color: var(--text); }
+  .nav-item.active .nav-dot { background: var(--neon); box-shadow: 0 0 8px var(--neon); }
+  .nav-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-faint);
+    transition: background 0.15s;
+  }
+
+  .sidebar-foot {
+    position: absolute;
+    bottom: 24px;
+    left: 20px;
+    right: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-faint);
+    text-transform: uppercase;
+  }
+
+  .main { padding: 40px 56px 80px; max-width: 1400px; }
+
+  .header { margin-bottom: 48px; }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--core-blue-300);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 44px;
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    margin-bottom: 10px;
+    color: var(--text);
+  }
+  h1 em { font-style: italic; color: var(--neon); font-weight: 300; }
+  .header-sub { color: var(--text-muted); font-size: 15px; max-width: 560px; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border-soft);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 32px;
+    border: 1px solid var(--border-soft);
+  }
+  .stat {
+    background: var(--navy-card);
+    padding: 24px 28px;
+    transition: background 0.15s;
+  }
+  .stat:hover { background: var(--navy-card-hover); }
+  .stat-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+  .stat-value {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 38px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: var(--text);
+  }
+  .stat-value.featured { color: var(--neon); }
+  .stat-value sup {
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-left: 2px;
+    vertical-align: baseline;
+  }
+  .stat-meta { font-size: 12px; color: var(--text-faint); margin-top: 10px; }
+
+  .uplift-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border-soft);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 56px;
+    border: 1px solid var(--border-soft);
+  }
+
+  .section { margin-bottom: 56px; }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: 22px;
+    letter-spacing: -0.015em;
+  }
+  .section-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .chart-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    padding: 28px;
+    position: relative;
+  }
+  .chart-wrap { position: relative; width: 100%; height: 320px; }
+  .chart-wrap.tall { height: 360px; }
+
+  .table-card {
+    background: var(--navy-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 16px 20px;
+    background: var(--navy);
+    border-bottom: 1px solid var(--border);
+  }
+  tbody td {
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--border-soft);
+    font-size: 14px;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--navy-card-hover); }
+  td.num { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text); }
+  td.cust { font-weight: 500; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .pill-pos { background: var(--neon-soft); color: var(--neon); }
+  .pill-collected { background: var(--core-blue-soft); color: var(--core-blue-300); }
+  .pill-upcoming { background: var(--pink-soft); color: var(--pink); }
+  .pill-recur { background: var(--neon-soft); color: var(--neon); }
+  .pill-once { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+
+  .charge-list { display: flex; flex-direction: column; gap: 10px; }
+  .charge {
+    background: var(--navy-card);
+    border: 1px solid var(--border-soft);
+    border-radius: 12px;
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: 1.5fr 2fr 1fr auto;
+    gap: 16px;
+    align-items: center;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .charge:hover { border-color: var(--border); background: var(--navy-card-hover); }
+  .charge-cust { font-weight: 500; font-size: 14px; }
+  .charge-cust-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-top: 4px;
+  }
+  .charge-svc { font-size: 14px; color: var(--text); }
+  .charge-svc-tags { margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .charge-amt {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    text-align: right;
+  }
+  .charge-amt-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    text-align: right;
+    margin-top: 2px;
+  }
+  .links { display: flex; gap: 8px; }
+  .link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border-soft);
+    color: var(--text-muted);
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .link:hover { background: var(--core-blue-soft); color: var(--core-blue-300); border-color: var(--core-blue); }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .banner {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: var(--neon-soft);
+    border: 1px solid rgba(223, 254, 2, 0.25);
+    color: var(--neon);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    margin-bottom: 20px;
+  }
+  .banner-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--neon);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (max-width: 1100px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .uplift-row { grid-template-columns: 1fr; }
+    .charge { grid-template-columns: 1fr; gap: 10px; }
+    .charge-amt, .charge-amt-meta { text-align: left; }
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; padding: 20px; }
+    .sidebar-foot { display: none; }
+    .nav { flex-direction: row; gap: 6px; overflow-x: auto; }
+    .nav-item { white-space: nowrap; }
+    .main { padding: 24px 20px 60px; }
+    .stats-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 32px; }
+    .stat-value { font-size: 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand"><svg width="100%" height="auto" style="max-width:140px" viewBox="0 0 391 101" fill="none" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M80.4506 62.7749C78.7051 61.0173 77.8323 58.8537 77.8323 56.2839C77.8323 53.7141 78.7051 51.5505 80.4506 49.7929C82.1961 48.0336 84.3611 47.1543 86.9457 47.1552C89.5763 47.1552 91.7641 48.0345 93.5086 49.7929C94.594 50.8642 95.3792 52.1989 95.7863 53.6647C96.2404 55.3816 96.2404 57.1861 95.7863 58.903C95.3792 60.3688 94.594 61.7035 93.5086 62.7749C91.7631 64.5333 89.5755 65.4125 86.9457 65.4125C84.3603 65.4125 82.1952 64.5333 80.4506 62.7749ZM357.109 48.1685C358.854 49.9261 359.727 52.0897 359.728 54.6595C359.73 57.2293 358.856 59.3929 357.109 61.1505C355.365 62.9089 353.2 63.7881 350.615 63.7881C347.985 63.7881 345.796 62.9089 344.052 61.1505C342.966 60.0789 342.181 58.7444 341.773 57.2786C341.321 55.5615 341.321 53.7574 341.773 52.0403C342.181 50.5745 342.966 49.2401 344.052 48.1685C345.798 46.4109 347.985 45.5317 350.615 45.5308C353.199 45.5308 355.363 46.4101 357.109 48.1685ZM341.773 71.0106C344.326 72.1923 347.205 72.7828 350.41 72.7819C355.852 72.7819 360.408 71.0239 364.08 67.5078C367.752 63.9918 369.588 59.6646 369.588 54.5259C369.588 49.3872 367.809 45.1045 364.25 41.6775C360.692 38.2505 356.192 36.538 350.751 36.5397C347.429 36.5397 344.437 37.2011 341.773 38.5239V37.2157H331.913V84.5455H341.773V71.0106ZM292.947 43.4355C289.275 46.9524 287.439 51.2801 287.439 56.4188C287.439 61.5575 289.217 65.8402 292.776 69.2672C296.337 72.6923 300.836 74.4049 306.276 74.4049C311.716 74.4049 316.273 72.6359 319.946 69.0979C323.618 65.558 325.454 61.2188 325.454 56.0802C325.454 50.9415 323.674 46.6728 320.114 43.2741C316.554 39.8702 312.054 38.1681 306.614 38.1681C301.174 38.1681 296.617 39.9261 292.944 43.4421L292.947 43.4355ZM306.412 47.1552C309.042 47.1552 311.231 48.0345 312.975 49.7929C314.719 51.5513 315.592 53.715 315.593 56.2839C315.593 58.8528 314.72 61.0165 312.975 62.7749C311.229 64.5333 309.042 65.4125 306.412 65.4125C303.828 65.4125 301.664 64.5333 299.918 62.7749C298.173 61.0165 297.3 58.8528 297.3 56.2839C297.3 53.7133 298.173 51.5496 299.918 49.7929C301.664 48.0362 303.828 47.1569 306.412 47.1552ZM263.636 47.1552C266.265 47.1552 268.452 48.0345 270.199 49.7929C271.946 51.5513 272.819 53.715 272.817 56.2839C272.817 58.8528 271.945 61.0165 270.199 62.7749C268.454 64.5333 266.266 65.4125 263.636 65.4125C261.051 65.4125 258.885 64.5333 257.141 62.7749C255.397 61.0165 254.524 58.8528 254.523 56.2839C254.523 53.7133 255.396 51.5496 257.141 49.7929C258.887 48.0362 261.051 47.1569 263.636 47.1552ZM250.17 43.4355C246.498 46.9524 244.662 51.2801 244.662 56.4188C244.662 61.5575 246.442 65.8402 250.001 69.2672C253.56 72.6923 258.06 74.4049 263.5 74.4049C268.941 74.4049 273.497 72.6359 277.169 69.0979C280.842 65.558 282.678 61.2188 282.677 56.0802C282.676 50.9415 280.896 46.6728 277.337 43.2741C273.778 39.8702 269.278 38.1681 263.837 38.1681C258.396 38.1681 253.839 39.9261 250.167 43.4421L250.17 43.4355ZM227.861 26.3965V74.4049H237.858V26.3965H227.861ZM160.398 43.4355C156.726 46.9524 154.89 51.2801 154.89 56.4188C154.89 61.5575 156.669 65.8402 160.228 69.2672C163.788 72.6923 168.288 74.4049 173.728 74.4049C179.168 74.4049 183.724 72.6359 187.398 69.0979C191.07 65.558 192.906 61.2188 192.906 56.0802C192.906 50.9415 191.127 46.6728 187.568 43.2741C184.008 39.8702 179.508 38.1681 174.068 38.1681C168.628 38.1681 164.071 39.9261 160.398 43.4421V43.4355ZM167.37 49.7929C169.115 48.0336 171.28 47.1543 173.863 47.1552C176.494 47.1552 178.681 48.0345 180.426 49.7929C182.172 51.5513 183.045 53.715 183.045 56.2839C183.045 58.8528 182.172 61.0165 180.426 62.7749C178.681 64.5333 176.494 65.4125 173.863 65.4125C171.28 65.4125 169.115 64.5333 167.37 62.7749C165.624 61.0165 164.751 58.8528 164.751 56.2839C164.751 53.7133 165.624 51.5496 167.37 49.7929ZM150.129 56.0802C150.129 50.9424 148.35 46.6715 144.791 43.2675C141.232 39.8635 136.733 38.1615 131.291 38.1615C125.852 38.1615 121.295 39.9195 117.621 43.4355C113.947 46.9515 112.112 51.2793 112.115 56.4188C112.115 61.5575 113.894 65.8402 117.454 69.2672C121.013 72.6942 125.513 74.4067 130.953 74.4049C136.393 74.4049 140.95 72.6359 144.622 69.0979C148.294 65.5598 150.13 61.2206 150.13 56.0802H150.129ZM131.088 47.1552C133.718 47.1552 135.906 48.0345 137.651 49.7929C139.395 51.5513 140.268 53.715 140.269 56.2839C140.269 58.8528 139.396 61.0165 137.651 62.7749C135.905 64.5333 133.718 65.4125 131.088 65.4125C128.502 65.4125 126.337 64.5333 124.593 62.7749C122.848 61.0165 121.975 58.8528 121.974 56.2839C121.974 53.7133 122.847 51.5496 124.593 49.7929C126.338 48.0362 128.503 47.1569 131.088 47.1552ZM199.368 38.8388V74.4049H209.227V59.3263C209.227 51.8878 212.673 48.1689 219.565 48.1698H221.608L221.741 38.1615C215.925 38.1615 211.754 40.3048 209.227 44.5916V38.8388H199.368ZM95.7917 39.934C93.2399 38.7532 90.3609 38.1624 87.1546 38.1615C81.7149 38.1615 77.1587 39.9195 73.4858 43.4355C69.8129 46.9515 67.9766 51.2793 67.9766 56.4188C67.9766 61.5575 69.7563 65.8402 73.3155 69.2672C76.8748 72.6942 81.3748 74.4067 86.8153 74.4049C90.137 74.4049 93.1291 73.7435 95.7917 72.4207L95.7863 74.4049H105.653V26.3965H95.7917V39.934Z" fill="white"/> <path d="M382.834 37.5239C384.273 37.5239 385.556 37.8469 386.683 38.4928C387.834 39.1388 388.722 40.0359 389.345 41.1842C389.993 42.3086 390.316 43.5885 390.316 45.0239C390.316 46.4593 389.993 47.7512 389.345 48.8995C388.722 50.0239 387.834 50.9091 386.683 51.555C385.556 52.201 384.273 52.5239 382.834 52.5239C381.396 52.5239 380.101 52.201 378.95 51.555C377.822 50.9091 376.935 50.0239 376.288 48.8995C375.64 47.7512 375.316 46.4593 375.316 45.0239C375.316 43.5885 375.64 42.3086 376.288 41.1842C376.935 40.0359 377.822 39.1388 378.95 38.4928C380.101 37.8469 381.396 37.5239 382.834 37.5239ZM382.834 50.8732C384.561 50.8732 385.94 50.3349 386.971 49.2584C388.026 48.1818 388.554 46.7703 388.554 45.0239C388.554 43.2775 388.026 41.866 386.971 40.7895C385.94 39.7129 384.561 39.1747 382.834 39.1747C381.084 39.1747 379.693 39.7129 378.662 40.7895C377.631 41.866 377.115 43.2775 377.115 45.0239C377.115 46.7703 377.631 48.1818 378.662 49.2584C379.693 50.3349 381.084 50.8732 382.834 50.8732ZM386.144 43.5885C386.144 44.1148 386.012 44.5814 385.748 44.9881C385.484 45.3708 385.125 45.6579 384.669 45.8493L386.575 48.7919H383.842L382.259 46.1005H382.007V48.7919H379.741V41.0766H383.374C384.213 41.0766 384.885 41.3158 385.388 41.7943C385.892 42.2488 386.144 42.8469 386.144 43.5885ZM382.007 44.2703H383.23C383.422 44.2703 383.578 44.2225 383.698 44.1268C383.842 44.0072 383.914 43.8517 383.914 43.6603C383.914 43.4689 383.842 43.3254 383.698 43.2297C383.578 43.134 383.422 43.0861 383.23 43.0861H382.007V44.2703Z" fill="white"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M28.9726 86.266C24.8332 86.8833 20.5448 87.5293 16.1074 88.2039C13.6381 88.5809 11.584 86.7382 11.584 84.1151V68.6066V50.5159C11.584 50.4247 11.584 50.3347 11.584 50.2434C11.584 47.0859 9.06284 44.4469 5.9297 44.3755C2.70343 44.3027 0 46.943 0 50.2448V91.6551C0 94.6803 1.24128 97.2029 3.22095 98.8181C5.15671 100.415 7.7936 101.067 10.6394 100.527L20.0734 98.6752C23.1121 98.0839 26.0709 97.4847 28.9646 96.9159L37.1081 95.3139L44.8245 93.7954C46.9173 93.3787 48.7759 92.0347 50.1023 90.159C51.4692 88.2161 52.2034 85.9029 52.2057 83.5317V56.0479C51.1032 57.0598 49.6573 57.6211 48.1567 57.6194C46.6562 57.6177 45.2115 57.0532 44.1114 56.0386V65.0337L44.13 79.7843C44.13 82.0925 42.5429 84.2037 40.5698 84.4987C36.834 85.0755 32.9612 85.6707 28.9726 86.266Z" fill="white"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M44.1138 34.4819V50.2232V50.4878C44.2309 53.1135 46.0602 55.1811 48.2381 55.1321C50.3668 55.0845 52.0857 53.0156 52.2001 50.4851V17.2167C52.1944 14.8392 51.4566 12.5204 50.086 10.5722C48.7556 8.70575 46.893 7.30491 44.787 6.90013L37.0812 5.38685L28.9656 3.78626L20.0944 2.04545L10.6817 0.193528C7.83725 -0.375277 5.18969 0.34036 3.24727 1.9383C1.26894 3.55344 0.0117188 6.09719 0.0117188 9.12244V40.1739V44.2838C1.5524 42.754 3.63894 41.8919 5.81633 41.8856L5.83627 41.8962H5.99595C8.10328 41.943 10.1113 42.7958 11.6023 44.2772V40.1765V33.585V16.6346C11.6023 14.0115 13.6591 12.1874 16.1257 12.5617C20.5534 13.2205 24.8343 13.8696 28.9683 14.5089C32.9409 15.1161 36.8178 15.6888 40.5429 16.2563C42.516 16.55 44.1031 18.6691 44.1031 20.9483L44.1138 34.4819Z" fill="white"/> <path fill-rule="evenodd" clip-rule="evenodd" d="M25.2366 47.7725C26.273 48.1838 27.002 49.2619 27.002 50.5173C27.002 52.1139 25.8233 53.4155 24.3292 53.4274C24.264 53.4274 24.1962 53.4274 24.1363 53.4274C22.7314 53.3362 21.6085 52.0769 21.6085 50.5173C21.6085 48.8889 22.8405 47.578 24.3346 47.5939C24.6436 47.5981 24.9493 47.6586 25.2366 47.7725ZM39.0982 62.9714C39.0982 58.7755 39.0982 54.5597 39.0982 50.3638C39.0982 46.1679 39.0982 41.9997 39.0982 37.8038C39.0982 33.6079 39.0982 29.3921 39.0876 25.1856C39.0876 23.3152 37.7572 21.614 36.1221 21.405C33.7832 21.1114 31.3978 20.819 28.9697 20.5095C26.4752 20.192 23.9487 19.8746 21.3478 19.5505C19.4639 19.3071 17.8887 20.7966 17.8887 22.8469C17.8887 27.4327 17.8887 32.0249 17.8887 36.6239C17.8887 41.2229 17.8887 45.8054 17.8887 50.3718V77.886C17.8887 79.9364 19.4546 81.4245 21.3385 81.193C23.9447 80.8676 26.4819 80.5475 28.9711 80.238C31.4092 79.9354 33.7969 79.6348 36.1341 79.3358C37.7838 79.1281 39.1102 77.4138 39.1102 75.5328C39.1036 71.3448 39.0982 67.1674 39.0982 62.9714Z" fill="white"/> </svg></div>
+    <div class="brand-sub">Services Revenue</div>
+    <nav class="nav">
+      <button class="nav-item active" data-view="overview"><span class="nav-dot"></span> Overview</button>
+      <button class="nav-item" data-view="customers"><span class="nav-dot"></span> Customers</button>
+      <button class="nav-item" data-view="charges"><span class="nav-dot"></span> Charges &amp; services</button>
+    </nav>
+    <div class="sidebar-foot">v1.0 &middot; April 2026</div>
+  </aside>
+
+  <main class="main">
+    <div class="view active" id="view-overview">
+      <div class="header">
+        <div class="banner"><span class="banner-dot"></span> View only &middot; live snapshot</div>
+        <div class="eyebrow">Q2 &middot; 2026 &middot; Snapshot</div>
+        <h1>Services revenue, <em>at a glance</em></h1>
+        <p class="header-sub">Tracking funds collected from individual customers across one-time and recurring services, plus the resulting uplift on existing ARR.</p>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">Total collected to date</div>
+          <div class="stat-value featured" id="m-total">&mdash;</div>
+          <div class="stat-meta">across all customers and services</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Customers</div>
+          <div class="stat-value" id="m-cust">&mdash;</div>
+          <div class="stat-meta">active accounts tracked</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Pipeline &middot; MRR</div>
+          <div class="stat-value" id="m-mrr">&mdash;<sup>/mo</sup></div>
+          <div class="stat-meta">monthly recurring from all recurring charges</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">New recurring &middot; ARR</div>
+          <div class="stat-value" id="m-newarr">&mdash;</div>
+          <div class="stat-meta">annualized run-rate added</div>
+        </div>
+      </div>
+
+      <div class="uplift-row">
+        <div class="stat">
+          <div class="stat-label">Avg recurring uplift</div>
+          <div class="stat-value" id="m-rec-uplift">&mdash;</div>
+          <div class="stat-meta">new recurring &divide; subscription ARR</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Avg total ARR uplift</div>
+          <div class="stat-value" id="m-tot-uplift">&mdash;</div>
+          <div class="stat-meta">(recurring + one-time collected) &divide; subscription ARR</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Revenue by customer</div>
+          <div class="section-meta">Ranked &middot; One-time vs Recurring</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-wrap"><canvas id="chart-cust"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Revenue collected over time</div>
+          <div class="section-meta">Cumulative &middot; USD</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-wrap"><canvas id="chart-time"></canvas></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">Recurring vs total ARR uplift</div>
+          <div class="section-meta">% of subscription ARR &middot; Per customer</div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-wrap tall"><canvas id="chart-uplift"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="view" id="view-customers">
+      <div class="header">
+        <div class="eyebrow">Roster</div>
+        <h1>Customers</h1>
+        <p class="header-sub">Subscription ARR is the active subscription run-rate. Total ARR is the manually entered figure that includes any other ARR collected in the past 12 months.</p>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead><tr>
+            <th>Customer</th>
+            <th>Subscription ARR</th>
+            <th>Total ARR</th>
+            <th>Collected</th>
+            <th>New recurring</th>
+            <th>Recur uplift</th>
+            <th>Total uplift</th>
+          </tr></thead>
+          <tbody id="cust-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="view" id="view-charges">
+      <div class="header">
+        <div class="eyebrow">Ledger</div>
+        <h1>Charges &amp; services</h1>
+        <p class="header-sub">Every billable event: one-time fees and monthly recurring services, both already collected and upcoming. Each links back to the original Stripe charge and Intercom ticket.</p>
+      </div>
+      <div class="charge-list" id="charges-list"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  const DATA = {
+  "customers": [
+    {
+      "id": "69ixkx8",
+      "name": "Miripa Real Estate Company",
+      "subArr": 2041,
+      "totalArr": 2780
+    },
+    {
+      "id": "06g4tmd",
+      "name": "Phx Property Development",
+      "subArr": 2028,
+      "totalArr": 3630
+    },
+    {
+      "id": "7tyio27",
+      "name": "Carolinas Commercial Realty and Associates LLC",
+      "subArr": 3228,
+      "totalArr": 3230
+    },
+    {
+      "id": "a593aad",
+      "name": "Cypress and Pine",
+      "subArr": 1668,
+      "totalArr": 3490
+    },
+    {
+      "id": "6z10reh",
+      "name": "Georgia",
+      "subArr": 1668,
+      "totalArr": 1680
+    }
+  ],
+  "charges": [
+    {
+      "customerId": "69ixkx8",
+      "service": "Cleanup",
+      "amount": 800,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-04-20",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "69ixkx8",
+      "service": "BK Assistance Session",
+      "amount": 199,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-04-17",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "69ixkx8",
+      "service": "Smart Tally",
+      "amount": 225,
+      "billing": "recurring",
+      "dateMode": "month",
+      "date": "",
+      "month": "2026-05",
+      "status": "future",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "06g4tmd",
+      "service": "Cleanup",
+      "amount": 500,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-04-15",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "06g4tmd",
+      "service": "Smart Tally",
+      "amount": 350,
+      "billing": "recurring",
+      "dateMode": "month",
+      "date": "",
+      "month": "2026-05",
+      "status": "future",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "06g4tmd",
+      "service": "BK Assistance Session",
+      "amount": 199,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-03-05",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "7tyio27",
+      "service": "BK Assistance Session",
+      "amount": 398,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-03-26",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "06g4tmd",
+      "service": "BK Assistance",
+      "amount": 99,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-03-03",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "7tyio27",
+      "service": "BK Assistance",
+      "amount": 199,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-03-26",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "a593aad",
+      "service": "Smart Tally",
+      "amount": 250,
+      "billing": "recurring",
+      "dateMode": "month",
+      "date": "",
+      "month": "2026-05",
+      "status": "future",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "a593aad",
+      "service": "BK Assistance Session",
+      "amount": 199,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-03-18",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "a593aad",
+      "service": "BK Assistance Session",
+      "amount": 99,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-02-13",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "6z10reh",
+      "service": "Cleanup",
+      "amount": 200,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-04-17",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "6z10reh",
+      "service": "Smart Tally",
+      "amount": 75,
+      "billing": "recurring",
+      "dateMode": "month",
+      "date": "",
+      "month": "2026-05",
+      "status": "future",
+      "stripe": "",
+      "intercom": ""
+    },
+    {
+      "customerId": "6z10reh",
+      "service": "BK Assistance Session",
+      "amount": 99,
+      "billing": "onetime",
+      "dateMode": "date",
+      "date": "2026-02-27",
+      "month": "",
+      "status": "past",
+      "stripe": "",
+      "intercom": ""
+    }
+  ]
+};
+
+  const fmt = (n) => '$' + Math.round(n || 0).toLocaleString();
+  const fmtK = (v) => '$' + (v >= 1000 ? (v/1000).toFixed(v % 1000 === 0 ? 0 : 1) + 'k' : v);
+  const COLORS = { blue: '#3185FC', blueLight: '#77BAFF', neon: '#DFFE02', pink: '#FF4998', cloud: '#F0EFEB' };
+  const CHART_FONT = "Inter, -apple-system, sans-serif";
+
+  Chart.defaults.color = '#9FB0E0';
+  Chart.defaults.borderColor = '#2a3470';
+  Chart.defaults.font.family = CHART_FONT;
+  Chart.defaults.font.size = 12;
+
+  function metricsForCustomer(c) {
+    const ch = DATA.charges.filter(x => x.customerId === c.id);
+    let cOne = 0, cRec = 0, uOne = 0, uRec = 0;
+    ch.forEach(h => {
+      const a = Number(h.amount || 0);
+      if (h.status === 'past') {
+        if (h.billing === 'recurring') cRec += a; else cOne += a;
+      } else {
+        if (h.billing === 'recurring') uRec += a; else uOne += a;
+      }
+    });
+    const collected = cOne + cRec;
+    const allRecMonthly = cRec + uRec;
+    const newRecARR = allRecMonthly * 12;
+    const sub = Number(c.subArr || 0);
+    const recUplift = sub > 0 ? (newRecARR / sub) * 100 : 0;
+    const totUplift = sub > 0 ? ((newRecARR + cOne) / sub) * 100 : 0;
+    return { cOne, cRec, collected, uOne, uRec, allRecMonthly, newRecARR, recUplift, totUplift };
+  }
+
+  function renderOverviewMetrics() {
+    let total = 0, mrr = 0, newArr = 0, rSum = 0, tSum = 0, n = 0;
+    DATA.customers.forEach(c => {
+      const m = metricsForCustomer(c);
+      total += m.collected; mrr += m.allRecMonthly; newArr += m.newRecARR;
+      if (c.subArr > 0) { rSum += m.recUplift; tSum += m.totUplift; n++; }
+    });
+    document.getElementById('m-total').textContent = fmt(total);
+    document.getElementById('m-cust').textContent = DATA.customers.length;
+    document.getElementById('m-mrr').innerHTML = fmt(mrr) + '<sup>/mo</sup>';
+    document.getElementById('m-newarr').textContent = fmt(newArr);
+    document.getElementById('m-rec-uplift').textContent = (n ? Math.round(rSum / n) : 0) + '%';
+    document.getElementById('m-tot-uplift').textContent = (n ? Math.round(tSum / n) : 0) + '%';
+  }
+
+  function drawCustChart() {
+    const ranked = DATA.customers.map(c => ({ name: c.name, ...metricsForCustomer(c) }))
+      .sort((a, b) => b.collected - a.collected);
+    new Chart(document.getElementById('chart-cust'), {
+      type: 'bar',
+      data: {
+        labels: ranked.map(r => r.name),
+        datasets: [
+          { label: 'One-time',              data: ranked.map(r => Math.round(r.cOne)), backgroundColor: COLORS.blue, borderRadius: 6, borderSkipped: false },
+          { label: 'Recurring (collected)', data: ranked.map(r => Math.round(r.cRec)), backgroundColor: COLORS.neon, borderRadius: 6, borderSkipped: false }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 }, color: '#9FB0E0' } },
+          tooltip: {
+            backgroundColor: '#0B1332', borderColor: '#2a3470', borderWidth: 1, padding: 12,
+            titleColor: '#FFFFFF', bodyColor: '#DBEAFF',
+            titleFont: { family: CHART_FONT, size: 13 }, bodyFont: { family: CHART_FONT, size: 12 },
+            callbacks: { label: (ctx) => '  ' + ctx.dataset.label + ': ' + fmt(ctx.parsed.y) }
+          }
+        },
+        scales: {
+          x: { stacked: true, grid: { display: false }, ticks: { font: { size: 12 }, color: '#9FB0E0', maxRotation: 30, minRotation: 0 } },
+          y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: fmtK, font: { size: 11 }, color: '#9FB0E0' } }
+        }
+      }
+    });
+  }
+
+  function drawTimeChart() {
+    const past = DATA.charges.filter(h => h.status === 'past')
+      .map(h => ({ d: h.date || (h.month ? h.month + '-01' : ''), a: Number(h.amount || 0) }))
+      .filter(p => p.d).sort((a, b) => a.d.localeCompare(b.d));
+    let run = 0;
+    const pts = past.map(p => { run += p.a; return { x: p.d, y: Math.round(run) }; });
+
+    const ctx = document.getElementById('chart-time').getContext('2d');
+    const grad = ctx.createLinearGradient(0, 0, 0, 320);
+    grad.addColorStop(0, 'rgba(49, 133, 252, 0.32)');
+    grad.addColorStop(1, 'rgba(49, 133, 252, 0)');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: pts.map(p => p.x), datasets: [{
+        label: 'Cumulative', data: pts.map(p => p.y),
+        borderColor: COLORS.blue, backgroundColor: grad,
+        fill: true, tension: 0.35, pointRadius: 4, pointHoverRadius: 7,
+        pointBackgroundColor: COLORS.neon, pointBorderColor: '#0B1332', pointBorderWidth: 2,
+        borderWidth: 2.5
+      }]},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0B1332', borderColor: '#2a3470', borderWidth: 1, padding: 12,
+            titleColor: '#FFFFFF', bodyColor: '#DBEAFF',
+            callbacks: { label: (ctx) => '  ' + fmt(ctx.parsed.y) + ' cumulative' }
+          }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#9FB0E0' } },
+          y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: fmtK, font: { size: 11 }, color: '#9FB0E0' } }
+        }
+      }
+    });
+  }
+
+  function drawUpliftChart() {
+    const up = DATA.customers.filter(c => c.subArr > 0).map(c => ({ name: c.name, ...metricsForCustomer(c) }))
+      .sort((a, b) => b.totUplift - a.totUplift);
+    new Chart(document.getElementById('chart-uplift'), {
+      type: 'bar',
+      data: {
+        labels: up.map(r => r.name),
+        datasets: [
+          { label: 'Recurring uplift', data: up.map(r => Math.round(r.recUplift)), backgroundColor: COLORS.blue, borderRadius: 4, borderSkipped: false },
+          { label: 'Total ARR uplift', data: up.map(r => Math.round(r.totUplift)), backgroundColor: COLORS.pink, borderRadius: 4, borderSkipped: false }
+        ]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, padding: 16, font: { size: 12 }, color: '#9FB0E0' } },
+          tooltip: {
+            backgroundColor: '#0B1332', borderColor: '#2a3470', borderWidth: 1, padding: 12,
+            titleColor: '#FFFFFF', bodyColor: '#DBEAFF',
+            callbacks: { label: (ctx) => '  ' + ctx.dataset.label + ': ' + ctx.parsed.x + '%' }
+          }
+        },
+        scales: {
+          x: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { callback: (v) => v + '%', font: { size: 11 }, color: '#9FB0E0' } },
+          y: { grid: { display: false }, ticks: { font: { size: 12 }, color: '#FFFFFF' } }
+        }
+      }
+    });
+  }
+
+  function renderCustomers() {
+    const tbody = document.getElementById('cust-tbody');
+    tbody.innerHTML = DATA.customers.map(c => {
+      const m = metricsForCustomer(c);
+      return `<tr>
+        <td class="cust">${c.name}</td>
+        <td class="num">${fmt(c.subArr)}</td>
+        <td class="num">${fmt(c.totalArr)}</td>
+        <td class="num">${fmt(m.collected)}</td>
+        <td class="num">${fmt(m.newRecARR)}</td>
+        <td><span class="pill pill-pos">${Math.round(m.recUplift)}%</span></td>
+        <td><span class="pill pill-pos">${Math.round(m.totUplift)}%</span></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function renderCharges() {
+    const list = document.getElementById('charges-list');
+    const sortKey = (h) => h.date || (h.month ? h.month + '-01' : '');
+    const sorted = [...DATA.charges].sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+    list.innerHTML = sorted.map(h => {
+      const cust = DATA.customers.find(c => c.id === h.customerId);
+      const when = h.dateMode === 'date' ? h.date : (h.month ? new Date(h.month + '-01').toLocaleString('en-US', { month: 'long', year: 'numeric' }) : '');
+      return `<div class="charge">
+        <div>
+          <div class="charge-cust">${cust ? cust.name : '—'}</div>
+          <div class="charge-cust-meta">${when}</div>
+        </div>
+        <div>
+          <div class="charge-svc">${h.service}</div>
+          <div class="charge-svc-tags">
+            <span class="pill ${h.status === 'past' ? 'pill-collected' : 'pill-upcoming'}">${h.status === 'past' ? 'Collected' : 'Upcoming'}</span>
+            <span class="pill ${h.billing === 'recurring' ? 'pill-recur' : 'pill-once'}">${h.billing === 'recurring' ? 'Recurring' : 'One-time'}</span>
+          </div>
+        </div>
+        <div>
+          <div class="charge-amt">${fmt(h.amount)}</div>
+          <div class="charge-amt-meta">${h.billing === 'recurring' ? 'per month' : 'one-time'}</div>
+        </div>
+        <div class="links">
+          ${h.stripe ? `<a class="link" href="${h.stripe}" target="_blank" rel="noopener">Stripe ↗</a>` : ''}
+          ${h.intercom ? `<a class="link" href="${h.intercom}" target="_blank" rel="noopener">Intercom ↗</a>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.querySelectorAll('.nav-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b === btn));
+      const v = btn.dataset.view;
+      document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'view-' + v));
+    });
+  });
+
+  renderOverviewMetrics();
+  drawCustChart();
+  drawTimeChart();
+  drawUpliftChart();
+  renderCustomers();
+  renderCharges();
+</script>
+</body>
+</html>
