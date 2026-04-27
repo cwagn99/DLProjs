@@ -1,0 +1,407 @@
+<h2 class="sr-only">Services revenue tracker with one-time and recurring charges, dual ARR fields, and uplift metrics.</h2>
+<style>
+  .stat-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; }
+  .stat-label { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 4px; }
+  .stat-value { font-size: 24px; font-weight: 500; margin: 0; }
+  .section-h { font-size: 16px; font-weight: 500; margin: 0 0 12px; }
+  .pill { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+  .pill-past { background: var(--color-background-info); color: var(--color-text-info); }
+  .pill-future { background: var(--color-background-warning); color: var(--color-text-warning); }
+  .pill-recur { background: var(--color-background-success); color: var(--color-text-success); margin-left: 4px; }
+  .pill-once { background: var(--color-background-secondary); color: var(--color-text-secondary); margin-left: 4px; }
+  .row-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 14px 16px; margin-bottom: 8px; }
+  .link-btn { font-size: 12px; color: var(--color-text-info); text-decoration: none; margin-right: 10px; }
+  .small-muted { font-size: 12px; color: var(--color-text-secondary); }
+  .tab-btn { padding: 6px 14px; font-size: 13px; background: transparent; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); cursor: pointer; }
+  .tab-btn.active { background: var(--color-background-secondary); border-color: var(--color-border-secondary); }
+  input.cell, select.cell { width: 100%; box-sizing: border-box; font-size: 13px; padding: 6px 8px; border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-md); background: var(--color-background-primary); color: var(--color-text-primary); }
+  table.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table.data-table th { text-align: left; font-weight: 500; color: var(--color-text-secondary); padding: 8px 6px; border-bottom: 0.5px solid var(--color-border-tertiary); font-size: 12px; }
+  table.data-table td { padding: 6px; border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: middle; }
+  .delete-btn { background: transparent; border: none; color: var(--color-text-secondary); cursor: pointer; font-size: 14px; padding: 4px 8px; }
+  .delete-btn:hover { color: var(--color-text-danger); }
+  .add-btn { font-size: 12px; padding: 6px 10px; }
+  .pos { color: var(--color-text-success); }
+  .neg { color: var(--color-text-danger); }
+</style>
+
+<div style="padding: 1rem 0;">
+  <div style="display: flex; gap: 8px; margin-bottom: 1.25rem; flex-wrap: wrap;">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="customers">Customers</button>
+    <button class="tab-btn" data-tab="charges">Charges & services</button>
+  </div>
+
+  <div id="tab-overview">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 1.5rem;">
+      <div class="stat-card"><p class="stat-label">Total collected to date</p><p class="stat-value" id="m-total">$0</p></div>
+      <div class="stat-card"><p class="stat-label">Customers</p><p class="stat-value" id="m-cust">0</p></div>
+      <div class="stat-card"><p class="stat-label">Upcoming pipeline (MRR)</p><p class="stat-value" id="m-future">$0</p><p class="small-muted" style="margin: 4px 0 0;">monthly recurring from all recurring charges</p></div>
+      <div class="stat-card"><p class="stat-label">New recurring (annualized)</p><p class="stat-value" id="m-newarr">$0</p></div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 2rem;">
+      <div class="stat-card"><p class="stat-label">Avg recurring uplift</p><p class="stat-value" id="m-rec-uplift">0%</p><p class="small-muted" style="margin: 4px 0 0;">new recurring ÷ subscription ARR</p></div>
+      <div class="stat-card"><p class="stat-label">Avg total ARR uplift</p><p class="stat-value" id="m-tot-uplift">0%</p><p class="small-muted" style="margin: 4px 0 0;">(recurring + one-time collected) ÷ subscription ARR</p></div>
+    </div>
+
+    <p class="section-h">Revenue by customer</p>
+    <div style="position: relative; width: 100%; height: 280px; margin-bottom: 2rem;">
+      <canvas id="chart-cust" role="img" aria-label="Stacked bar chart of revenue per customer split by one-time and recurring services">Revenue per customer.</canvas>
+    </div>
+
+    <p class="section-h">Revenue collected over time</p>
+    <div style="position: relative; width: 100%; height: 260px; margin-bottom: 2rem;">
+      <canvas id="chart-time" role="img" aria-label="Line chart of cumulative collected revenue over time">Cumulative collected over time.</canvas>
+    </div>
+
+    <p class="section-h">Recurring vs total ARR uplift by customer</p>
+    <div id="wrap-uplift" style="position: relative; width: 100%; height: 280px;">
+      <canvas id="chart-uplift" role="img" aria-label="Grouped horizontal bar chart comparing recurring uplift and total ARR uplift per customer">Recurring vs total uplift.</canvas>
+    </div>
+  </div>
+
+  <div id="tab-customers" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <p class="section-h" style="margin: 0;">Customers</p>
+      <button class="tab-btn add-btn" id="add-cust">+ Add customer</button>
+    </div>
+    <p class="small-muted" style="margin: 0 0 12px;">Subscription ARR = annual recurring revenue from active subscriptions. Total ARR = subscription ARR plus any other ARR collected in the past 12 months (entered manually).</p>
+    <div style="overflow-x: auto;">
+      <table class="data-table" id="cust-table">
+        <thead><tr>
+          <th style="width: 18%;">Customer</th>
+          <th style="width: 13%;">Subscription ARR</th>
+          <th style="width: 12%;">Total ARR</th>
+          <th style="width: 13%;">Collected</th>
+          <th style="width: 13%;">New recurring</th>
+          <th style="width: 11%;">Recur uplift</th>
+          <th style="width: 11%;">Total uplift</th>
+          <th style="width: 9%;"></th>
+        </tr></thead>
+        <tbody id="cust-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div id="tab-charges" style="display: none;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <p class="section-h" style="margin: 0;">Charges & services</p>
+      <button class="tab-btn add-btn" id="add-charge">+ Add entry</button>
+    </div>
+    <p class="small-muted" style="margin: 0 0 12px;">One-time = single charge. Recurring = monthly fee (annualized × 12 for ARR uplift). For upcoming, use exact date or just pick a month.</p>
+    <div id="charges-list"></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+(function() {
+  const STORAGE_KEY = 'svc_tracker_v3';
+  const OLD_KEY = 'svc_tracker_v2';
+  let state = { customers: [], charges: [] };
+
+  const seed = {
+    customers: [
+      { id: 'c1', name: 'Acme Corp', subArr: 120000, totalArr: 120000 },
+      { id: 'c2', name: 'Globex LLC', subArr: 60000, totalArr: 72000 },
+      { id: 'c3', name: 'Initech', subArr: 35000, totalArr: 35000 }
+    ],
+    charges: [
+      { id: 'h1', customerId: 'c1', service: 'Onboarding', amount: 8500, billing: 'onetime', dateMode: 'date', date: '2025-09-12', month: '', status: 'past', stripe: 'https://dashboard.stripe.com/payments/pi_example1', intercom: 'https://app.intercom.com/a/inbox/conversation/12345' },
+      { id: 'h2', customerId: 'c1', service: 'Bookkeeping retainer', amount: 1200, billing: 'recurring', dateMode: 'date', date: '2025-12-01', month: '', status: 'past', stripe: 'https://dashboard.stripe.com/payments/pi_example2', intercom: '' },
+      { id: 'h3', customerId: 'c1', service: 'Annual audit prep', amount: 9000, billing: 'onetime', dateMode: 'month', date: '', month: '2026-03', status: 'future', stripe: '', intercom: 'https://app.intercom.com/a/inbox/conversation/22221' },
+      { id: 'h4', customerId: 'c2', service: 'Migration setup', amount: 5500, billing: 'onetime', dateMode: 'date', date: '2025-11-20', month: '', status: 'past', stripe: 'https://dashboard.stripe.com/payments/pi_example3', intercom: '' },
+      { id: 'h5', customerId: 'c2', service: 'Bookkeeping retainer', amount: 800, billing: 'recurring', dateMode: 'month', date: '', month: '2026-02', status: 'future', stripe: '', intercom: '' },
+      { id: 'h6', customerId: 'c3', service: 'Tax filing assist', amount: 2400, billing: 'onetime', dateMode: 'date', date: '2026-01-15', month: '', status: 'past', stripe: 'https://dashboard.stripe.com/payments/pi_example4', intercom: 'https://app.intercom.com/a/inbox/conversation/33334' }
+    ]
+  };
+
+  async function load() {
+    // Try v3 first
+    try {
+      const r = await window.storage.get(STORAGE_KEY);
+      if (r && r.value) { state = JSON.parse(r.value); return; }
+    } catch (e) {}
+    // Migrate v2 -> v3 (otherArr was an additive baseline; new field is total ARR = sub + other)
+    try {
+      const r2 = await window.storage.get(OLD_KEY);
+      if (r2 && r2.value) {
+        const old = JSON.parse(r2.value);
+        state = {
+          customers: (old.customers || []).map(c => ({
+            id: c.id, name: c.name,
+            subArr: Number(c.subArr || 0),
+            totalArr: Number(c.subArr || 0) + Number(c.otherArr || 0)
+          })),
+          charges: old.charges || []
+        };
+        await save();
+        return;
+      }
+    } catch (e) {}
+    state = seed;
+    await save();
+  }
+  async function save() {
+    try { await window.storage.set(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  const fmt = (n) => '$' + Math.round(n || 0).toLocaleString();
+  const uid = () => Math.random().toString(36).slice(2, 9);
+
+  function metricsForCustomer(c) {
+    const charges = state.charges.filter(h => h.customerId === c.id);
+    let collectedOnetime = 0, collectedRecurringMonthly = 0;
+    let upcomingOnetime = 0, upcomingRecurringMonthly = 0;
+    charges.forEach(h => {
+      const a = Number(h.amount || 0);
+      if (h.status === 'past') {
+        if (h.billing === 'recurring') collectedRecurringMonthly += a;
+        else collectedOnetime += a;
+      } else {
+        if (h.billing === 'recurring') upcomingRecurringMonthly += a;
+        else upcomingOnetime += a;
+      }
+    });
+    const collectedTotal = collectedOnetime + collectedRecurringMonthly;
+    const allRecurringMonthly = collectedRecurringMonthly + upcomingRecurringMonthly;
+    const newRecurringARR = allRecurringMonthly * 12;
+    const subArr = Number(c.subArr || 0);
+    const recurringUplift = subArr > 0 ? (newRecurringARR / subArr) * 100 : 0;
+    const totalUplift = subArr > 0 ? ((newRecurringARR + collectedOnetime) / subArr) * 100 : 0;
+    return { collectedOnetime, collectedRecurringMonthly, collectedTotal, upcomingOnetime, upcomingRecurringMonthly, allRecurringMonthly, newRecurringARR, recurringUplift, totalUplift };
+  }
+
+  function renderOverview() {
+    let total = 0, mrrPipeline = 0, newArr = 0, recSum = 0, totSum = 0, upliftCount = 0;
+    state.customers.forEach(c => {
+      const m = metricsForCustomer(c);
+      total += m.collectedTotal;
+      mrrPipeline += m.allRecurringMonthly;
+      newArr += m.newRecurringARR;
+      if (Number(c.subArr || 0) > 0) {
+        recSum += m.recurringUplift;
+        totSum += m.totalUplift;
+        upliftCount++;
+      }
+    });
+    document.getElementById('m-total').textContent = fmt(total);
+    document.getElementById('m-cust').textContent = state.customers.length;
+    document.getElementById('m-future').textContent = fmt(mrrPipeline) + '/mo';
+    document.getElementById('m-newarr').textContent = fmt(newArr);
+    document.getElementById('m-rec-uplift').textContent = (upliftCount ? Math.round(recSum / upliftCount) : 0) + '%';
+    document.getElementById('m-tot-uplift').textContent = (upliftCount ? Math.round(totSum / upliftCount) : 0) + '%';
+    drawCharts();
+  }
+
+  let chartCust, chartTime, chartUplift;
+  function drawCharts() {
+    const ranked = state.customers.map(c => ({ name: c.name, ...metricsForCustomer(c) }))
+      .sort((a, b) => b.collectedTotal - a.collectedTotal);
+
+    if (chartCust) chartCust.destroy();
+    chartCust = new Chart(document.getElementById('chart-cust'), {
+      type: 'bar',
+      data: {
+        labels: ranked.map(r => r.name),
+        datasets: [
+          { label: 'One-time', data: ranked.map(r => Math.round(r.collectedOnetime)), backgroundColor: '#378ADD', borderRadius: 4 },
+          { label: 'Recurring (collected)', data: ranked.map(r => Math.round(r.collectedRecurringMonthly)), backgroundColor: '#1D9E75', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, font: { size: 12 } } },
+          tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + fmt(ctx.parsed.y) } }
+        },
+        scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { callback: (v) => '$' + (v/1000) + 'k' } } }
+      }
+    });
+
+    const past = state.charges.filter(h => h.status === 'past')
+      .map(h => ({ d: h.date || (h.month ? h.month + '-01' : ''), a: Number(h.amount || 0) }))
+      .filter(p => p.d)
+      .sort((a, b) => a.d.localeCompare(b.d));
+    let running = 0;
+    const points = past.map(p => { running += p.a; return { x: p.d, y: Math.round(running) }; });
+
+    if (chartTime) chartTime.destroy();
+    chartTime = new Chart(document.getElementById('chart-time'), {
+      type: 'line',
+      data: { labels: points.map(p => p.x), datasets: [{ label: 'Cumulative', data: points.map(p => p.y), borderColor: '#1D9E75', backgroundColor: 'rgba(29,158,117,0.12)', fill: true, tension: 0.25, pointRadius: 3 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => fmt(ctx.parsed.y) } } },
+        scales: { y: { beginAtZero: true, ticks: { callback: (v) => '$' + (v/1000) + 'k' } } }
+      }
+    });
+
+    const upRanked = state.customers.filter(c => Number(c.subArr || 0) > 0)
+      .map(c => ({ name: c.name, ...metricsForCustomer(c) }))
+      .sort((a, b) => b.totalUplift - a.totalUplift);
+    const upliftHeight = Math.max(220, upRanked.length * 60 + 80);
+    document.getElementById('wrap-uplift').style.height = upliftHeight + 'px';
+
+    if (chartUplift) chartUplift.destroy();
+    chartUplift = new Chart(document.getElementById('chart-uplift'), {
+      type: 'bar',
+      data: {
+        labels: upRanked.map(r => r.name),
+        datasets: [
+          { label: 'Recurring uplift', data: upRanked.map(r => Math.round(r.recurringUplift)), backgroundColor: '#7F77DD', borderRadius: 4 },
+          { label: 'Total ARR uplift', data: upRanked.map(r => Math.round(r.totalUplift)), backgroundColor: '#D85A30', borderRadius: 4 }
+        ]
+      },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: true, position: 'bottom', labels: { boxWidth: 10, boxHeight: 10, font: { size: 12 } } },
+          tooltip: { callbacks: { label: (ctx) => ctx.dataset.label + ': ' + ctx.parsed.x + '%' } }
+        },
+        scales: { x: { beginAtZero: true, ticks: { callback: (v) => v + '%' } } }
+      }
+    });
+  }
+
+  function renderCustomers() {
+    const tbody = document.getElementById('cust-tbody');
+    tbody.innerHTML = '';
+    state.customers.forEach(c => {
+      const m = metricsForCustomer(c);
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><input class="cell" data-field="name" data-id="${c.id}" value="${escapeHtml(c.name)}"></td>
+        <td><input class="cell" data-field="subArr" data-id="${c.id}" type="number" value="${c.subArr || 0}"></td>
+        <td><input class="cell" data-field="totalArr" data-id="${c.id}" type="number" value="${c.totalArr || 0}"></td>
+        <td>${fmt(m.collectedTotal)}</td>
+        <td>${fmt(m.newRecurringARR)}<div class="small-muted">annualized</div></td>
+        <td><span class="${m.recurringUplift >= 0 ? 'pos' : 'neg'}">${Math.round(m.recurringUplift)}%</span></td>
+        <td><span class="${m.totalUplift >= 0 ? 'pos' : 'neg'}">${Math.round(m.totalUplift)}%</span></td>
+        <td style="text-align: right;"><button class="delete-btn" data-del-cust="${c.id}">×</button></td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    tbody.querySelectorAll('input.cell').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const id = e.target.dataset.id, field = e.target.dataset.field;
+        const cust = state.customers.find(x => x.id === id);
+        if (!cust) return;
+        cust[field] = (field === 'subArr' || field === 'totalArr') ? Number(e.target.value || 0) : e.target.value;
+        await save(); renderAll();
+      });
+    });
+    tbody.querySelectorAll('[data-del-cust]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.delCust;
+        state.customers = state.customers.filter(c => c.id !== id);
+        state.charges = state.charges.filter(h => h.customerId !== id);
+        await save(); renderAll();
+      });
+    });
+  }
+
+  function renderCharges() {
+    const list = document.getElementById('charges-list');
+    list.innerHTML = '';
+    if (state.charges.length === 0) {
+      list.innerHTML = '<p class="small-muted">No entries yet.</p>';
+      return;
+    }
+    const sortKey = (h) => h.date || (h.month ? h.month + '-01' : '');
+    const sorted = [...state.charges].sort((a, b) => sortKey(b).localeCompare(sortKey(a)));
+    sorted.forEach(h => {
+      const card = document.createElement('div');
+      card.className = 'row-card';
+      const custOptions = state.customers.map(c => `<option value="${c.id}" ${c.id === h.customerId ? 'selected' : ''}>${escapeHtml(c.name)}</option>`).join('');
+      const dateInputHtml = h.dateMode === 'month'
+        ? `<input class="cell" data-field="month" data-id="${h.id}" type="month" value="${h.month || ''}">`
+        : `<input class="cell" data-field="date" data-id="${h.id}" type="date" value="${h.date || ''}">`;
+      card.innerHTML = `
+        <div style="display: grid; grid-template-columns: 1.4fr 1.7fr 0.9fr 1fr 1.1fr 1fr 1fr auto; gap: 8px; align-items: center; margin-bottom: 8px;">
+          <select class="cell" data-field="customerId" data-id="${h.id}">${custOptions}</select>
+          <input class="cell" data-field="service" data-id="${h.id}" placeholder="Service name" value="${escapeHtml(h.service || '')}">
+          <input class="cell" data-field="amount" data-id="${h.id}" type="number" placeholder="Amount" value="${h.amount || 0}">
+          <select class="cell" data-field="billing" data-id="${h.id}">
+            <option value="onetime" ${h.billing === 'onetime' ? 'selected' : ''}>One-time</option>
+            <option value="recurring" ${h.billing === 'recurring' ? 'selected' : ''}>Recurring/mo</option>
+          </select>
+          <select class="cell" data-field="dateMode" data-id="${h.id}">
+            <option value="date" ${h.dateMode === 'date' ? 'selected' : ''}>Exact date</option>
+            <option value="month" ${h.dateMode === 'month' ? 'selected' : ''}>Month only</option>
+          </select>
+          ${dateInputHtml}
+          <select class="cell" data-field="status" data-id="${h.id}">
+            <option value="past" ${h.status === 'past' ? 'selected' : ''}>Collected</option>
+            <option value="future" ${h.status === 'future' ? 'selected' : ''}>Upcoming</option>
+          </select>
+          <button class="delete-btn" data-del-charge="${h.id}">×</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input class="cell" data-field="stripe" data-id="${h.id}" placeholder="Stripe charge URL" value="${escapeHtml(h.stripe || '')}">
+          <input class="cell" data-field="intercom" data-id="${h.id}" placeholder="Intercom ticket URL" value="${escapeHtml(h.intercom || '')}">
+        </div>
+        <div style="margin-top: 6px;">
+          <span class="pill ${h.status === 'past' ? 'pill-past' : 'pill-future'}">${h.status === 'past' ? 'Collected' : 'Upcoming'}</span>
+          <span class="pill ${h.billing === 'recurring' ? 'pill-recur' : 'pill-once'}">${h.billing === 'recurring' ? 'Recurring' : 'One-time'}</span>
+          ${h.stripe ? `<a class="link-btn" href="${h.stripe}" target="_blank" style="margin-left: 8px;">Stripe ↗</a>` : ''}
+          ${h.intercom ? `<a class="link-btn" href="${h.intercom}" target="_blank">Intercom ↗</a>` : ''}
+        </div>
+      `;
+      list.appendChild(card);
+    });
+
+    list.querySelectorAll('input.cell, select.cell').forEach(inp => {
+      inp.addEventListener('change', async (e) => {
+        const id = e.target.dataset.id, field = e.target.dataset.field;
+        const ch = state.charges.find(x => x.id === id);
+        if (!ch) return;
+        ch[field] = field === 'amount' ? Number(e.target.value || 0) : e.target.value;
+        if (field === 'dateMode') {
+          if (e.target.value === 'date') ch.month = '';
+          else ch.date = '';
+        }
+        await save(); renderAll();
+      });
+    });
+    list.querySelectorAll('[data-del-charge]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const id = e.target.dataset.delCharge;
+        state.charges = state.charges.filter(h => h.id !== id);
+        await save(); renderAll();
+      });
+    });
+  }
+
+  function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])); }
+
+  function renderAll() { renderOverview(); renderCustomers(); renderCharges(); }
+
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const tab = e.target.dataset.tab;
+      document.querySelectorAll('.tab-btn[data-tab]').forEach(b => b.classList.toggle('active', b === e.target));
+      ['overview', 'customers', 'charges'].forEach(t => {
+        document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+      });
+    });
+  });
+
+  document.getElementById('add-cust').addEventListener('click', async () => {
+    state.customers.push({ id: uid(), name: 'New customer', subArr: 0, totalArr: 0 });
+    await save(); renderAll();
+    document.querySelector('.tab-btn[data-tab="customers"]').click();
+  });
+  document.getElementById('add-charge').addEventListener('click', async () => {
+    if (state.customers.length === 0) {
+      state.customers.push({ id: uid(), name: 'New customer', subArr: 0, totalArr: 0 });
+    }
+    state.charges.push({ id: uid(), customerId: state.customers[0].id, service: '', amount: 0, billing: 'onetime', dateMode: 'date', date: new Date().toISOString().slice(0, 10), month: '', status: 'past', stripe: '', intercom: '' });
+    await save(); renderAll();
+  });
+
+  load().then(renderAll);
+})();
+</script>
